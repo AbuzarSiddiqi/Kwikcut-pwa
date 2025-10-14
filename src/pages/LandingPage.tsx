@@ -1,14 +1,38 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Scissors, User, Store } from 'lucide-react';
 import { LoginForm } from '../components/auth/LoginForm';
 import { SignupForm } from '../components/auth/SignupForm';
+import { useAuth } from '../contexts/AuthContext';
 import { UserType } from '../types';
+import { LoadingSpinner } from '../components/shared/LoadingSpinner';
 
 type ViewMode = 'landing' | 'login' | 'signup';
 
 export const LandingPage: React.FC = () => {
   const [viewMode, setViewMode] = useState<ViewMode>('landing');
   const [selectedUserType, setSelectedUserType] = useState<UserType>('customer');
+  const { currentUser, loading } = useAuth();
+  const navigate = useNavigate();
+
+  // Redirect logged-in users to their dashboard
+  useEffect(() => {
+    if (!loading && currentUser) {
+      const dashboardPath = currentUser.type === 'customer' ? '/customer/dashboard' : '/barber/dashboard';
+      console.log('User already logged in, redirecting to:', dashboardPath);
+      navigate(dashboardPath, { replace: true });
+    }
+  }, [currentUser, loading, navigate]);
+
+  // Show loading while checking auth state
+  if (loading) {
+    return <LoadingSpinner fullScreen size={48} />;
+  }
+
+  // Don't render landing page if user is logged in (will redirect)
+  if (currentUser) {
+    return <LoadingSpinner fullScreen size={48} />;
+  }
 
   const handleSelectUserType = (type: UserType) => {
     setSelectedUserType(type);
