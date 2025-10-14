@@ -5,6 +5,8 @@ import {
   signOut,
   onAuthStateChanged,
   sendPasswordResetEmail,
+  setPersistence,
+  browserLocalPersistence,
   User as FirebaseUser
 } from 'firebase/auth';
 import { doc, setDoc, getDoc } from 'firebase/firestore';
@@ -27,6 +29,9 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
   const signup = async (email: string, password: string, name: string, phone: string, type: UserType): Promise<User> => {
     try {
+      // Ensure persistence is set before signup
+      await setPersistence(auth, browserLocalPersistence);
+      
       const userCredential = await createUserWithEmailAndPassword(auth, email, password);
       const userId = userCredential.user.uid;
 
@@ -53,6 +58,9 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
   const login = async (email: string, password: string): Promise<User> => {
     try {
+      // Ensure persistence is set before login
+      await setPersistence(auth, browserLocalPersistence);
+      
       const userCredential = await signInWithEmailAndPassword(auth, email, password);
       const userDoc = await getDoc(doc(db, 'users', userCredential.user.uid));
       
@@ -96,8 +104,18 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
   useEffect(() => {
     console.log('Setting up auth state listener...');
+    
+    // Set persistence first
+    setPersistence(auth, browserLocalPersistence)
+      .then(() => {
+        console.log('Auth persistence confirmed: LOCAL');
+      })
+      .catch((error) => {
+        console.error('Failed to set persistence:', error);
+      });
+    
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser: FirebaseUser | null) => {
-      console.log('Auth state changed:', firebaseUser ? 'User logged in' : 'No user');
+      console.log('Auth state changed:', firebaseUser ? `User logged in: ${firebaseUser.uid}` : 'No user');
       
       if (firebaseUser) {
         try {
@@ -106,7 +124,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
           
           if (userDoc.exists()) {
             const userData = userDoc.data();
-            console.log('User data loaded:', userData);
+            console.log('User data loaded:', userData.name, userData.type);
             setCurrentUser({
               id: userDoc.id,
               type: userData.type,
@@ -124,6 +142,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
           setCurrentUser(null);
         }
       } else {
+        console.log('No authenticated user, setting currentUser to null');
         setCurrentUser(null);
       }
       setLoading(false);
