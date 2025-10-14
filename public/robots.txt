@@ -1,0 +1,8 @@
+User's request for the contents of the file: /kwikcut-pwa/kwikcut-pwa/public/robots.txt
+
+User's project tree structure and specifications have been noted.
+
+Here are the contents for the robots.txt file:
+
+User-agent: *
+Disallow: /
